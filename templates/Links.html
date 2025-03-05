@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Links</title>
+    <link rel="stylesheet" href="/static/Links.css">
+    <script src="/static/scripts/BalckMode.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    </body>
+</head>
+</html>
+<body>
+
+<nav class="navbar navbar-expand-lg bg-body-tertiary shadow-sm p-3">
+    <div class="container d-flex justify-content-between align-items-center">
+        <h2 class="fw-bold"><a style="text-decoration: none; color: #adb5bd;" href="/DashBoard">
+            Gerar Procuração Particular
+        </a>
+        </h2>
+        <button class="btn btn-outline-secondary" onclick="toggleTheme()">🌓 Alternar Tema</button>
+        <a href="/OAuth/Logout" class="btn btn-outline-danger" onclick="toggleTheme()">❌ Sair da conta</a>
+    </div>
+</nav>
+
+<h2>Lista de Links</h2>
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Status</th>
+        <th>Data e hora de criação</th>
+        <th>OUTORGANTE</th>
+        <th>Data de preenchimento</th>
+        <th>Ação</th>
+    </tr>
+    </thead>
+    <tbody id="linkTable">
+    {% for link in Items %}
+            <tr>
+                <td>{{ link.id }}</td>
+                <td class="status">{{ 'Preenchido' if link.is_used else 'Não Preenchido' }}</td>
+                <td>{{ link.Creation_data }}</td>
+                {# Se o usuário ainda não preencheu seu nome não aparecera #}
+                {% if link.User != 'None' %}
+                    <td>{{ link.User }}</td>
+                {% else %}
+                    <td>Não Preenchido</td>
+                {% endif %}
+                {# Se o usuário ainda não preencheu a data não aparecera #}
+                {% if link.is_used == 1 %}
+                    <td>{{ link.Date }}</td>
+                {% else %}
+                    <td>Não preenchido</td>
+                {% endif %}
+                <td>
+                    <button onclick="copiarLink(this,'{{ request.host_url[:-1] + url_for('procuracao',
+                id=link.id,
+                token=link.token,
+                Files_id=link.id) }}')"
+                            {% if link.is_used %}disabled{% endif %}>
+                        Copiar Link
+                    </button>
+                    <button>
+                        <a style="text-decoration: none; color: white;"
+                           href="{{ url_for('DashBoardPDF', id=link.id, Name=link.Name) }}" target="_blank">
+                            Acessar arquivo
+                        </a>
+                    </button>
+                </td>
+            </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+{# Controle da Paginação #}
+<div class="row mt-4">
+    <div class="col d-flex justify-content-center align-items-center">
+        {% if page > 1 %}
+            <a class="btn btn-primary me-3" href="{{ url_for('DashBoardLinkList', page=page-1) }}">Anterior</a>
+        {% endif %}
+        <span>Página {{ page }} de {{ total_pages }}</span>
+        {% if page < total_pages %}
+            <a class="btn btn-primary ms-3" href="{{ url_for('DashBoardLinkList', page=page+1) }}">Próxima</a>
+        {% endif %}
+    </div>
+</div>
+
+
+{# Script para bloquear o botão de copiar link após o fomulário ser preenchido #}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("tbody tr").forEach(row => {
+            let isUsed = row.cells[1].textContent.trim() === "Preenchido";
+            let button = row.querySelector("button");
+            if (isUsed) {
+                button.disabled = true;
+            }
+        });
+    });
+
+    function copiarLink(button, link) {
+        navigator.clipboard.writeText(link).then(() => {
+            alert("Link copiado para a área de transferência!");
+            button.parentElement.parentElement.cells[1].textContent = "Preenchido";
+            button.disabled = true;
+        }).catch(err => console.error("Erro ao copiar link: ", err));
+    }
+</script>
+
+{# Convertendo a data para padrão BR #}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const colunasDeDatas = [2, 4]; // Índices das colunas que contêm datas
+
+        document.querySelectorAll("tbody tr").forEach(row => {
+            colunasDeDatas.forEach(index => {
+                let dataCell = row.cells[index]; // Obtém a célula na coluna especificada
+                if (dataCell) {
+                    let dataTexto = dataCell.textContent.trim();
+
+                    if (dataTexto) {
+                        let partesData = dataTexto.split(/[-T :]/); // Divide a string considerando diferentes formatos de data
+                        let ano = parseInt(partesData[0]);
+                        let mes = parseInt(partesData[1]) - 1; // Mês começa do zero em JavaScript
+                        let dia = parseInt(partesData[2]);
+                        let horas = partesData[3] ? parseInt(partesData[3]) : 0;
+                        let minutos = partesData[4] ? parseInt(partesData[4]) : 0;
+
+                        let dataObj = new Date(ano, mes, dia, horas, minutos);
+
+                        if (!isNaN(dataObj.getTime())) {
+                            let diaFormatado = String(dataObj.getDate()).padStart(2, '0');
+                            let mesFormatado = String(dataObj.getMonth() + 1).padStart(2, '0');
+                            let anoFormatado = dataObj.getFullYear();
+                            let horasFormatadas = String(dataObj.getHours()).padStart(2, '0');
+                            let minutosFormatados = String(dataObj.getMinutes()).padStart(2, '0');
+
+                            // Se a data não tem horário, mostra só a data
+                            if (partesData.length <= 3) {
+                                dataCell.textContent = `${diaFormatado}/${mesFormatado}/${anoFormatado}`;
+                            } else {
+                                dataCell.textContent = `${diaFormatado}/${mesFormatado}/${anoFormatado} ${horasFormatadas}:${minutosFormatados}`;
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    });
+</script>
+
+
+{# Importação do BootStrap #}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
