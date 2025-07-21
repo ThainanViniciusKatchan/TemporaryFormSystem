@@ -1,62 +1,46 @@
-# Nome do seu workflow, aparece lá na aba "Actions" do GitHub
+# Nome do seu workflow
 name: Python com Conda e requirements.txt
 
-# Define quando o workflow vai rodar (os gatilhos)
+# Gatilhos (quando vai rodar)
 on:
   push:
-    # Roda toda vez que você der um 'push' para a branch 'main'
-    branches: [ "main" ] # Se sua branch principal for outra, tipo 'master', mude aqui
+    branches: [ "main" ] # Mude para sua branch principal se for outra
   pull_request:
-    # Roda também quando abrirem um 'pull request' para a branch 'main'
     branches: [ "main" ] # Mude aqui também, se precisar
 
-# Agrupa todos os "trabalhos" que o workflow vai executar
+# Jobs
 jobs:
-  # Nome do job. Você pode ter vários, mas aqui vamos usar só um: 'build'
   build:
-    # Define o tipo de máquina que vai rodar o job. 'ubuntu-latest' é a mais comum.
+    # Máquina que vai rodar
     runs-on: ubuntu-latest
 
-    # Define as etapas (os passos) que o job vai seguir
+    # Passos
     steps:
-      # 1. Copia o código do seu repositório para a máquina do GitHub Actions
+      # 1. Copia o código do repositório
       - name: Clonar o repositório
         uses: actions/checkout@v4
 
-      # 2. Configura o Conda na máquina
+      # 2. Configura o Conda
       - name: Setup do Conda
         uses: conda-incubator/setup-miniconda@v3
         with:
-          # Garante que o Conda está atualizado
           auto-update-conda: true
-          # Define a versão do Python que o Conda vai usar como base
           python-version: '3.10'
 
-      # 3. Cria um ambiente Conda e instala as dependências
+      # 3. Cria o ambiente e instala as dependências via pip
       - name: Instalar dependências
         run: |
-          # Cria um ambiente novo chamado 'meu-ambiente' com Python 3.10
           conda create --name meu-ambiente python=3.10 -y
-
-          # Ativa o ambiente que acabamos de criar
-          # O comando 'eval' e o 'conda shell.bash hook' preparam o shell pra usar o 'conda activate'
           eval "$(conda shell.bash hook)"
           conda activate meu-ambiente
-
-          # Agora que o ambiente tá ativo, usamos o pip pra instalar as paradas
-          echo "Instalando dependências do requirements.txt..."
           python -m pip install --upgrade pip
           pip install flake8
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      # 4. Roda o Flake8 para verificar a qualidade do código
+      # 4. Roda o Flake8 para verificar o código
       - name: Rodar o Linter (Flake8)
         run: |
-          # Ativa o ambiente de novo pra garantir que estamos usando o flake8 que instalamos
           eval "$(conda shell.bash hook)"
           conda activate meu-ambiente
-
-          # Comandos do Flake8 que você já conhece
-          echo "Verificando o código com Flake8..."
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
