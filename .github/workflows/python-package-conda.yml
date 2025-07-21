@@ -20,10 +20,11 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install flake8
+        # O comando abaixo só vai rodar se o arquivo requirements.txt existir
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
-        # para a build se houver erros de sintaxe do Python ou nomes indefinidos
+        # para a build se houver erros de sintaxe ou nomes indefinidos
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # o exit-zero trata todos os erros como avisos. O editor do GitHub tem 127 caracteres de largura
+        # o exit-zero trata todos os erros como avisos
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
